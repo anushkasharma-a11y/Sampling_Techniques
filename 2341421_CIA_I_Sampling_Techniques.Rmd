@@ -1,0 +1,51 @@
+---
+title: "2341421_CIA_I_sampling_techniques"
+author: "ANUSHKA SHARMA"
+date: "2025-11-24"
+output: word_document
+---
+
+```{r}
+# ---------------------------------------------
+# Creating a Hypothetical Population Dataset
+# ---------------------------------------------
+set.seed(123)
+
+N <- 500  # Population size
+
+# Population: Student IDs and exam marks
+population <- data.frame(
+  StudentID = 1:N,
+  Marks = rnorm(N, mean = 70, sd = 10)  # Normally distributed marks
+)
+
+# ---------------------------------------------
+# Simple Random Sampling Without Replacement
+# ---------------------------------------------
+n <- 50  # Sample size
+
+sample_wor <- population[sample(1:N, n, replace = FALSE), ]
+
+# ---------------------------------------------
+# Simple Random Sampling With Replacement
+# ---------------------------------------------
+sample_wr <- population[sample(1:N, n, replace = TRUE), ]
+
+# ---------------------------------------------
+# Comparing the Two Samples
+# ---------------------------------------------
+mean_wor <- mean(sample_wor$Marks)
+mean_wr  <- mean(sample_wr$Marks)
+
+var_wor  <- var(sample_wor$Marks)
+var_wr   <- var(sample_wr$Marks)
+
+cat("Population Mean:", mean(population$Marks), "\n\n")
+
+cat("SRSWOR Mean:", mean_wor, "\n")
+cat("SRSWR Mean:", mean_wr, "\n\n")
+
+cat("SRSWOR Variance:", var_wor, "\n")
+cat("SRSWR Variance:", var_wr, "\n")
+
+```
