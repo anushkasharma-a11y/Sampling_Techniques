@@ -1,0 +1,177 @@
+---
+title: "2341421_Assynchronous_Assignemnt_1"
+author: "ANUSHKA SHARMA"
+date: "2025-12-16"
+output: word_document
+---
+
+```{r}
+library(shiny)
+
+ui <- fluidPage(
+  
+  titlePanel("Sampling–2 : Stratified Sampling for Population Mean"),
+  
+  sidebarLayout(
+    
+    sidebarPanel(
+      
+      h4("General Inputs"),
+      numericInput("L", "Number of Strata", value = 4, min = 1),
+      numericInput("B", "Sampling Bias (Margin of Error)", value = 2, min = 0.1),
+      
+      tags$hr(),
+      h4("Strata-wise Inputs (comma separated)"),
+      
+      textInput("Nh", "Population Sizes (N_h)", "500,400,300,200"),
+      textInput("Sh", "Standard Deviations (S_h)", "12,15,10,8"),
+      textInput("ch", "Cost per Unit (c_h)", "50,60,40,30"),
+      textInput("th", "Time per Unit (t_h)", "15,20,10,8"),
+      
+      tags$hr(),
+      actionButton("calc", "Generate Sample Sizes", class = "btn-primary")
+    ),
+    
+    mainPanel(
+      
+      tabsetPanel(
+        
+        tabPanel(
+          "Proportional Allocation",
+          tableOutput("propTable"),
+          br(),
+          strong(textOutput("propTotal"))
+        ),
+        
+        tabPanel(
+          "Neyman Allocation",
+          tableOutput("neymanTable"),
+          br(),
+          strong(textOutput("neymanTotal"))
+        ),
+        
+        tabPanel(
+          "Optimised Allocation",
+          tableOutput("optTable"),
+          br(),
+          strong(textOutput("optTotal"))
+        ),
+        
+        tabPanel(
+          "Experimental Design Plot",
+          plotOutput("designPlot", height = "400px")
+        )
+      )
+    )
+  )
+)
+
+server <- function(input, output) {
+  
+  parsed_data <- eventReactive(input$calc, {
+    
+    N_h <- as.numeric(strsplit(input$Nh, ",")[[1]])
+    S_h <- as.numeric(strsplit(input$Sh, ",")[[1]])
+    c_h <- as.numeric(strsplit(input$ch, ",")[[1]])
+    t_h <- as.numeric(strsplit(input$th, ",")[[1]])
+    
+    validate(
+      need(length(N_h) == input$L, "Number of strata and inputs do not match")
+    )
+    
+    list(N_h = N_h, S_h = S_h, c_h = c_h, t_h = t_h)
+  })
+  
+  # ---------- Proportional Allocation ----------
+  output$propTable <- renderTable({
+    
+    d <- parsed_data()
+    N_h <- d$N_h
+    n <- round(sum(N_h) / (input$B^2))
+    
+    n_h <- round(n * N_h / sum(N_h))
+    
+    data.frame(
+      Stratum = paste("Stratum", 1:length(n_h)),
+      Population = N_h,
+      Sample_Size = n_h
+    )
+  })
+  
+  output$propTotal <- renderText({
+    paste("Total Sample Size =", sum(parsed_data()$N_h) / (input$B^2))
+  })
+  
+  # ---------- Neyman Allocation ----------
+  output$neymanTable <- renderTable({
+    
+    d <- parsed_data()
+    N_h <- d$N_h
+    S_h <- d$S_h
+    
+    weights <- N_h * S_h
+    n <- round(sum(weights) / (input$B^2))
+    
+    n_h <- round(n * weights / sum(weights))
+    
+    data.frame(
+      Stratum = paste("Stratum", 1:length(n_h)),
+      Population = N_h,
+      Sample_Size = n_h
+    )
+  })
+  
+  output$neymanTotal <- renderText({
+    paste("Total Sample Size =", sum(parsed_data()$N_h * parsed_data()$S_h) / (input$B^2))
+  })
+  
+  # ---------- Optimised Allocation (Cost + Time) ----------
+  output$optTable <- renderTable({
+    
+    d <- parsed_data()
+    N_h <- d$N_h
+    S_h <- d$S_h
+    c_h <- d$c_h
+    t_h <- d$t_h
+    
+    lambda <- 0.5
+    weights <- N_h * S_h / sqrt(c_h + lambda * t_h)
+    n <- round(sum(weights) / (input$B^2))
+    
+    n_h <- round(n * weights / sum(weights))
+    
+    data.frame(
+      Stratum = paste("Stratum", 1:length(n_h)),
+      Population = N_h,
+      Sample_Size = n_h
+    )
+  })
+  
+  output$optTotal <- renderText({
+    paste("Total Sample Size =", round(sum(parsed_data()$N_h) / (input$B^2)))
+  })
+  
+  # ---------- Plot ----------
+  output$designPlot <- renderPlot({
+    
+    d <- parsed_data()
+    N_h <- d$N_h
+    S_h <- d$S_h
+    
+    weights <- N_h * S_h
+    n_h <- round(weights / sum(weights) * 100)
+    
+    barplot(
+      n_h,
+      names.arg = paste("Stratum", 1:length(n_h)),
+      col = "darkseagreen",
+      xlab = "Strata",
+      ylab = "Sample Size",
+      main = "Stratified Sampling Design (Neyman Allocation)"
+    )
+  })
+}
+
+shinyApp(ui = ui, server = server)
+
+```
